@@ -75,8 +75,31 @@ with st.expander("📋 Session Details", expanded=False):
 # Fetch and preprocess driver info
 driver_df = fetch_drivers(selected_session_key)
 driver_df["driver_number"] = driver_df["driver_number"].astype(str)
-driver_color_map = build_driver_color_map(driver_df)
-driver_info = driver_df[["driver_number", "name_acronym"]]
+
+# Team filter setup (column name may vary by dataset shape)
+team_col = "team_name" if "team_name" in driver_df.columns else None
+if team_col is None and "team" in driver_df.columns:
+    team_col = "team"
+if team_col is None:
+    driver_df["team_name"] = "Unknown Team"
+    team_col = "team_name"
+
+available_teams = sorted(driver_df[team_col].dropna().unique())
+selected_teams = st.multiselect(
+    "Select Team(s)",
+    options=available_teams,
+    default=available_teams,
+    help="Filter all charts and tables to selected teams.",
+)
+
+filtered_driver_df = driver_df[driver_df[team_col].isin(selected_teams)].copy()
+selected_driver_numbers = set(filtered_driver_df["driver_number"])
+driver_color_map = build_driver_color_map(filtered_driver_df)
+driver_info = filtered_driver_df[["driver_number", "name_acronym"]]
+
+if not selected_teams:
+    st.warning("Please select at least one team to display data.")
+    st.stop()
 
 processed_df = pd.DataFrame()
 
@@ -88,13 +111,14 @@ with st.expander(f"📈 Lap Time Chart for {selected_session_type} at {selected_
 
     # Merge name_acronym into the lap data
     processed_df["driver_number"] = processed_df["driver_number"].astype(str)
+    processed_df = processed_df[processed_df["driver_number"].isin(selected_driver_numbers)]
     processed_df = processed_df.merge(driver_info, on="driver_number", how="left")
 
     if processed_df.empty:
         st.warning("No lap time data found.")
     else:
         fig = plot_lap_times(processed_df, driver_color_map)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
         fastest = best_lap_per_driver(processed_df)
         if not fastest.empty and "name_acronym" in fastest.columns:
@@ -115,13 +139,14 @@ with st.expander(f"🛞 Tire strategy for {selected_session_type} at {selected_c
     stints = fetch_stints(selected_session_key)
     stints_df = process_stints(stints)
     stints_df["driver_number"] = stints_df["driver_number"].astype(str)
+    stints_df = stints_df[stints_df["driver_number"].isin(selected_driver_numbers)]
     stints_df = stints_df.merge(driver_info, on="driver_number", how="left")
 
     if stints_df.empty:
         st.warning("No tire strategy data found.")
     else:
         fig = plot_tire_strategy(stints_df, driver_color_map)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
 # Pit Stops
 with st.expander(f"⏱  Pit stop durations for {selected_session_type} at {selected_country} {selected_year}",
@@ -129,13 +154,14 @@ with st.expander(f"⏱  Pit stop durations for {selected_session_type} at {selec
     pit_stop = fetch_pit_stop(selected_session_key)
     pit_stop_df = process_pit_stops(pit_stop)
     pit_stop_df["driver_number"] = pit_stop_df["driver_number"].astype(str)
+    pit_stop_df = pit_stop_df[pit_stop_df["driver_number"].isin(selected_driver_numbers)]
     pit_stop_df = pit_stop_df.merge(driver_info, on="driver_number", how="left")
 
     if pit_stop_df.empty:
         st.warning("No pit stop data found.")
     else:
         fig = plot_pit_stop(pit_stop_df, driver_color_map)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
 
 # --- Extensions (README): degradation, quali vs race, events, sectors ---
 
@@ -151,6 +177,10 @@ with st.expander(
     st_raw = fetch_stints(selected_session_key)
     lap_p = process_lap_data(lap_raw)
     st_p = process_stints(st_raw)
+    lap_p["driver_number"] = lap_p["driver_number"].astype(str)
+    st_p["driver_number"] = st_p["driver_number"].astype(str)
+    lap_p = lap_p[lap_p["driver_number"].isin(selected_driver_numbers)]
+    st_p = st_p[st_p["driver_number"].isin(selected_driver_numbers)]
     joined = join_laps_with_stints(lap_p, st_p)
     if joined.empty:
         st.warning("Need lap and stint data for degradation view.")
@@ -159,7 +189,7 @@ with st.expander(
         joined = joined.merge(driver_info, on="driver_number", how="left")
         fig = plot_tire_degradation(joined, driver_color_map)
         if fig:
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, theme=None)
         else:
             st.info("Not enough stint-linked laps to plot degradation.")
 
@@ -188,11 +218,12 @@ with st.expander(
             qb["driver_number"] = qb["driver_number"].astype(str)
             rb["driver_number"] = rb["driver_number"].astype(str)
             pace = qb.merge(rb, on="driver_number", how="inner")
+            pace = pace[pace["driver_number"].isin(selected_driver_numbers)]
             pace = pace.merge(driver_info, on="driver_number", how="left")
             pace = pace.dropna(subset=["name_acronym"])
             fig = plot_quali_vs_race_pace(pace, driver_color_map)
             if fig:
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, theme=None)
 
 with st.expander(
     f"🚩 Race control & flags — {selected_session_type} at {selected_country} {selected_year}",
@@ -200,6 +231,12 @@ with st.expander(
 ):
     rc = fetch_race_control(selected_session_key)
     rc = process_race_control(rc)
+    if not rc.empty and "driver_number" in rc.columns:
+        rc["driver_number"] = rc["driver_number"].astype("string")
+        rc = rc[
+            rc["driver_number"].isna()
+            | rc["driver_number"].isin(list(selected_driver_numbers))
+        ]
     if rc.empty:
         st.info("No race control messages for this session.")
     else:
@@ -217,6 +254,7 @@ with st.expander(
     lap_raw = fetch_laps(selected_session_key)
     lap_p = process_lap_data(lap_raw)
     lap_p["driver_number"] = lap_p["driver_number"].astype(str)
+    lap_p = lap_p[lap_p["driver_number"].isin(selected_driver_numbers)]
     sec = aggregate_mean_sectors(lap_p)
     if sec.empty:
         st.info("Sector durations not available for this session (common during some races).")
@@ -225,7 +263,7 @@ with st.expander(
         sec = sec.dropna(subset=["name_acronym"])
         fig = plot_sector_comparison(sec, driver_color_map)
         if fig:
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, theme=None)
 
 if processed_df.empty:
     st.info("Lap data is not available for this session.")

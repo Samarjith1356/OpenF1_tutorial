@@ -3,6 +3,34 @@ import plotly.graph_objects as go
 import streamlit as st
 import pandas as pd
 
+DARK_BG = "#2b2b2b"
+DARK_PAPER = "#242424"
+LIGHT_TEXT = "#f2f2f2"
+
+
+def apply_dark_theme(fig):
+    """Apply a consistent dark-grey theme to all charts."""
+    fig.update_layout(
+        plot_bgcolor=DARK_BG,
+        paper_bgcolor=DARK_PAPER,
+        font=dict(color=LIGHT_TEXT),
+        title_font=dict(color=LIGHT_TEXT),
+        legend=dict(font=dict(color=LIGHT_TEXT)),
+    )
+    fig.update_xaxes(
+        showgrid=True,
+        gridcolor="#555555",
+        zerolinecolor="#666666",
+        color=LIGHT_TEXT,
+    )
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor="#555555",
+        zerolinecolor="#666666",
+        color=LIGHT_TEXT,
+    )
+    return fig
+
 
 # Utility Formatters
 def format_lap_time(seconds):
@@ -86,7 +114,7 @@ def plot_lap_times(lap_time_df: pd.DataFrame, color_map: dict):
         ticktext=[format_seconds_to_mmss(val) for val in tick_vals],
     )
 
-    return fig
+    return apply_dark_theme(fig)
 
 
 # Tire Strategy Chart
@@ -170,7 +198,7 @@ def plot_tire_strategy(stints_df, color_map: dict):
     # Hide original Y ticks
     fig.update_yaxes(showticklabels=False)
 
-    return fig
+    return apply_dark_theme(fig)
 
 
 # Pit Stop Duration Chart
@@ -228,7 +256,7 @@ def plot_pit_stop(pit_stop_df: pd.DataFrame, color_map: dict):
         hovermode="closest",
         barmode="group",
         height=600)
-    return fig
+    return apply_dark_theme(fig)
 
 
 def plot_tire_degradation(laps_with_stints: pd.DataFrame, color_map: dict):
@@ -270,7 +298,7 @@ def plot_tire_degradation(laps_with_stints: pd.DataFrame, color_map: dict):
         hovermode="closest",
         height=650,
     )
-    return fig
+    return apply_dark_theme(fig)
 
 
 def plot_quali_vs_race_pace(merged: pd.DataFrame, color_map: dict):
@@ -302,7 +330,7 @@ def plot_quali_vs_race_pace(merged: pd.DataFrame, color_map: dict):
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
         xaxis_tickangle=-45,
     )
-    return fig
+    return apply_dark_theme(fig)
 
 
 def plot_sector_comparison(sector_df: pd.DataFrame, color_map: dict):
@@ -347,4 +375,4 @@ def plot_sector_comparison(sector_df: pd.DataFrame, color_map: dict):
         legend=dict(orientation="h", yanchor="bottom", y=1.02),
         xaxis_tickangle=-45,
     )
-    return fig
+    return apply_dark_theme(fig)
