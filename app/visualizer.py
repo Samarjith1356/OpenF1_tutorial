@@ -229,3 +229,122 @@ def plot_pit_stop(pit_stop_df: pd.DataFrame, color_map: dict):
         barmode="group",
         height=600)
     return fig
+
+
+def plot_tire_degradation(laps_with_stints: pd.DataFrame, color_map: dict):
+    """
+    Lap time vs position within each stint (tire wear). One trace per driver stint.
+    """
+    if laps_with_stints.empty:
+        return None
+    df = laps_with_stints.dropna(subset=["lap_in_stint", "lap_duration", "name_acronym"]).copy()
+    if "is_pit_out_lap" in df.columns:
+        df = df[~df["is_pit_out_lap"].fillna(False).astype(bool)]
+    df = df[df["lap_in_stint"].notna()]
+    if df.empty:
+        return None
+
+    fig = go.Figure()
+    for (acronym, stint), grp in df.groupby(["name_acronym", "stint_number"], dropna=False):
+        grp = grp.sort_values("lap_in_stint")
+        c = color_map.get(acronym, "gray")
+        compound = grp["compound"].iloc[0] if "compound" in grp.columns else ""
+        fig.add_trace(go.Scatter(
+            x=grp["lap_in_stint"],
+            y=grp["lap_duration"],
+            mode="lines+markers",
+            name=f"{acronym} S{int(stint) if pd.notna(stint) else '?'} ({compound or '?'})",
+            line=dict(color=c),
+            marker=dict(color=c, size=5),
+            legendgroup=acronym,
+            hovertemplate=(
+                f"<b>{acronym}</b><br>"
+                "Lap in stint: %{x}<br>"
+                "Lap time (s): %{y:.3f}<extra></extra>"
+            ),
+        ))
+    fig.update_layout(
+        title="Tire degradation (lap time vs lap within stint)",
+        xaxis_title="Lap number within stint",
+        yaxis_title="Lap time (s)",
+        hovermode="closest",
+        height=650,
+    )
+    return fig
+
+
+def plot_quali_vs_race_pace(merged: pd.DataFrame, color_map: dict):
+    """Grouped bars: best qualifying lap vs best race lap per driver."""
+    if merged.empty:
+        return None
+    drivers = merged["name_acronym"].tolist()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=drivers,
+        y=merged["best_quali"],
+        name="Best quali lap",
+        marker_color=[color_map.get(d, "#888") for d in drivers],
+        hovertemplate="%{y:.3f}s<extra></extra>",
+    ))
+    fig.add_trace(go.Bar(
+        x=drivers,
+        y=merged["best_race"],
+        name="Best race lap",
+        marker_color=[color_map.get(d, "#555") for d in drivers],
+        opacity=0.85,
+        hovertemplate="%{y:.3f}s<extra></extra>",
+    ))
+    fig.update_layout(
+        title="Qualifying vs race: best lap per driver",
+        yaxis_title="Time (s)",
+        barmode="group",
+        height=600,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02),
+        xaxis_tickangle=-45,
+    )
+    return fig
+
+
+def plot_sector_comparison(sector_df: pd.DataFrame, color_map: dict):
+    """Grouped mean sector times per driver."""
+    if sector_df.empty:
+        return None
+    need = ["duration_sector_1", "duration_sector_2", "duration_sector_3", "name_acronym"]
+    if not all(c in sector_df.columns for c in need):
+        return None
+    drivers = sector_df["name_acronym"].tolist()
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        name="Sector 1",
+        x=drivers,
+        y=sector_df["duration_sector_1"],
+        marker_color=[color_map.get(d, "#666") for d in drivers],
+        hovertemplate="S1: %{y:.3f}s<extra></extra>",
+    ))
+    fig.add_trace(go.Bar(
+        name="Sector 2",
+        x=drivers,
+        y=sector_df["duration_sector_2"],
+        marker_color=[color_map.get(d, "#888") for d in drivers],
+        marker_line_width=1,
+        marker_line_color="#2ecc71",
+        hovertemplate="S2: %{y:.3f}s<extra></extra>",
+    ))
+    fig.add_trace(go.Bar(
+        name="Sector 3",
+        x=drivers,
+        y=sector_df["duration_sector_3"],
+        marker_color=[color_map.get(d, "#aaa") for d in drivers],
+        marker_line_width=1,
+        marker_line_color="#3498db",
+        hovertemplate="S3: %{y:.3f}s<extra></extra>",
+    ))
+    fig.update_layout(
+        title="Mean sector times by driver (clean laps)",
+        yaxis_title="Seconds",
+        barmode="group",
+        height=600,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02),
+        xaxis_tickangle=-45,
+    )
+    return fig

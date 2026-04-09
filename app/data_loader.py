@@ -6,7 +6,9 @@ import os
 
 load_dotenv()
 
-BASE_URL = os.getenv("BASE_API_URL")
+BASE_URL = os.getenv("BASE_API_URL") or "https://api.openf1.org/v1/"
+if not BASE_URL.endswith("/"):
+    BASE_URL = BASE_URL + "/"
 
 
 def fetch_data(endpoint, params=None):
@@ -64,8 +66,7 @@ def fetch_sessions(meeting_key):
     # Combine session name and start date for display
     df["label"] = df["session_name"] + " (" + df["date_start"] + ")"
 
-    # Only keep necessary columns for dropdowns
-    return df[["session_key", "label"]].drop_duplicates()
+    return df[["session_key", "label", "session_name", "session_type"]].drop_duplicates()
 
 
 @st.cache_data
@@ -90,3 +91,8 @@ def fetch_pit_stop(session_key):
 def fetch_drivers(session_key):
     # Provides driver metadata such as name, number, and team color
     return fetch_data("drivers", {"session_key": session_key})
+
+
+@st.cache_data
+def fetch_race_control(session_key):
+    return fetch_data("race_control", {"session_key": session_key})
