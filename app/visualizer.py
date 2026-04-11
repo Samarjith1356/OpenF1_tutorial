@@ -157,7 +157,8 @@ def plot_tire_strategy(stints_df, color_map: dict):
             y=[acronym],  # One row per driver
             base=row["lap_start"],  # Start lap (bar offset)
             orientation="h",
-            marker=dict(color=COMPOUND_COLORS.get(compound, "gray")),
+            marker=dict(color=COMPOUND_COLORS.get(compound, "gray"),
+                       line=dict(color="black", width=2),
             hovertemplate=(
                 f"{acronym}: {row['driver_number']}<br>"
                 f"Compound: {compound}<br>"
