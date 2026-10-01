@@ -1,8 +1,6 @@
 # OpenF1 API: Interactive Strategy Dashboard Tutorial with Streamlit & Plotly
 
-Welcome to this tutorial, where you'll learn to build an interactive Formula 1 strategy dashboard using the OpenF1 API, Streamlit, and Plotly. This hands-on project is ideal for those interested in data visualization, sports analytics, and modern Python web tools.
-
-## 📊 Overview
+## Overview
 
 This dashboard enables users to:
 - Select a race by year and country
@@ -18,7 +16,7 @@ This dashboard enables users to:
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 openf1-dashboard-tutorial/
@@ -39,7 +37,7 @@ openf1-dashboard-tutorial/
 ![tyre_strategy_chart](./assets/Screenshot2.png)
 ![pit_stop_chart](./assets/Screenshot3.png)
 
-## 🛠️ Setup & Requirements
+## Setup & Requirements
 
 ### 1. Create and activate a virtual environment
 ```bash
@@ -59,7 +57,7 @@ BASE_API_URL=https://api.openf1.org/v1/
 
 ---
 
-## 🚀 Launch the App
+## Launch the App
 
 ```bash
 streamlit run main.py
@@ -69,7 +67,7 @@ This will open the dashboard in your default browser.
 
 ---
 
-### 3. 📂 main.py Highlights
+### 3. main.py Highlights
 
 #### Features:
 
@@ -96,7 +94,7 @@ sessions returns FP1, Quali, Race for a given race (meeting_key)
 laps, pit, stints, and drivers use session_key to pull telemetry data
 
 
-### 4 🔍 File Descriptions
+### 4 File Descriptions
 ```bash
 data_loader.py
 ```
@@ -132,7 +130,7 @@ All charts format hover templates and colors using OpenF1 data fields.
 
 ---
 
-## 💡 Extend This Project
+## Extend This Project
 
 Ideas to build on:
 - Add tire degradation trends
@@ -142,8 +140,8 @@ Ideas to build on:
 
 ---
 
-## 🎉 Conclusion
+## Conclusion
 
-You've now built an interactive F1 dashboard using real-world telemetry data from the OpenF1 API. This is a great example of combining API usage, data processing, and visual storytelling in Python.
+An interactive F1 dashboard using real-world telemetry data from the OpenF1 API. This is a great example of combining API usage, data processing, and visual storytelling in Python.
 
 Fork it, share it, or showcase it in your portfolio!
